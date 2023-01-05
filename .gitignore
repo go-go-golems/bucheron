@@ -1,0 +1,4 @@
+.terraform*
+dist
+*tfstate*
+.env
