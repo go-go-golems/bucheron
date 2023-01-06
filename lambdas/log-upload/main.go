@@ -24,10 +24,10 @@ func handleUpload(sqsEvent events.SQSEvent) error {
 		return fmt.Errorf("Error creating session: %v", err)
 	}
 
-	// create an S3 client
+	// create an S3 pkg
 	s3Svc := s3.New(sess)
 
-	// create an SES client
+	// create an SES pkg
 	sesSvc := ses.New(sess)
 
 	for _, message := range sqsEvent.Records {

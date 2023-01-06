@@ -17,6 +17,8 @@ locals {
     }
   }
 
+  source_dir = "${path.module}/../"
+
   lambda_exists = {
     lambda_binary_exists = {
       for key, _ in local.lambdas : key => fileexists("${path.module}/lambdas/bin/${key}")
@@ -32,16 +34,16 @@ resource "null_resource" "lambda_build" {
     test          = "foo"
 
     main = join("", [
-      for file in fileset("${path.module}/../../lambdas/${each.key}", "*.go") :
-      filebase64("${path.module}/../../lambdas/${each.key}/${file}")
+      for file in fileset("${local.source_dir}/lambdas/${each.key}", "*.go") :
+      filebase64("${local.source_dir}/lambdas/${each.key}/${file}")
     ])
   }
 
   provisioner "local-exec" {
     command = <<EOT
-        mkdir -p ${path.module}/../../dist/lambdas/bin
-        mkdir -p ${path.module}/../../dist/lambdas/archive
-        GOOS=linux GOARCH=amd64 go build -ldflags '-s -w' -o ${path.module}/../../dist/lambdas/bin/${each.key} ${path.module}/../../lambdas/${each.key}/.
+        mkdir -p ${local.source_dir}/dist/lambdas/bin
+        mkdir -p ${local.source_dir}/dist/lambdas/archive
+        GOOS=linux GOARCH=amd64 go build -ldflags '-s -w' -o ${local.source_dir}/dist/lambdas/bin/${each.key} ${local.source_dir}/lambdas/${each.key}/.
     EOT
   }
 
@@ -52,15 +54,15 @@ data "archive_file" "this" {
   for_each   = local.lambdas
 
   type        = "zip"
-  source_file = "${path.module}/../../dist/lambdas/bin/${each.key}"
-  output_path = "${path.module}/../../dist/lambdas/archive/${each.key}.zip"
+  source_file = "${local.source_dir}/dist/lambdas/bin/${each.key}"
+  output_path = "${local.source_dir}/dist/lambdas/archive/${each.key}.zip"
 }
 
 
 resource "aws_lambda_function" "this" {
   for_each = local.lambdas
 
-  filename         = "${path.module}/../../dist/lambdas/archive/${each.key}.zip"
+  filename         = "${local.source_dir}/dist/lambdas/archive/${each.key}.zip"
   function_name    = "${each.key}_${local.service_name}"
   description      = each.value.description
   role             = each.value.role.arn

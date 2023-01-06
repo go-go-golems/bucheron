@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	"log"
 	"os"
+	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws"
@@ -49,20 +50,16 @@ func handler(ctx context.Context) (events.APIGatewayProxyResponse, error) {
 		log.Fatal(errors.Wrapf(err, "failed to get session token"))
 	}
 
-	//// Return the access key, secret key, and session token as a JSON string
-	//return fmt.Sprintf(
-	//	`{"access_key": "%s", "secret_key": "%s", "session_token": "%s"}`,
-	//	*result.Credentials.AccessKeyId,
-	//	*result.Credentials.SecretAccessKey,
-	//	*result.Credentials.SessionToken,
-	//), nil
+	formattedExpiration := result.Credentials.Expiration.Format(time.RFC3339)
+
 	return events.APIGatewayProxyResponse{
 		StatusCode: 200,
 		Body: fmt.Sprintf(
-			`{"access_key": "%s", "secret_key": "%s", "session_token": "%s"}`,
+			`{"access_key": "%s", "secret_key": "%s", "session_token": "%s", "expiration": "%s"}`,
 			*result.Credentials.AccessKeyId,
 			*result.Credentials.SecretAccessKey,
 			*result.Credentials.SessionToken,
+			formattedExpiration,
 		),
 	}, nil
 }
