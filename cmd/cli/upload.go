@@ -40,31 +40,37 @@ var uploadCmd = &cobra.Command{
 
 		progressCh := make(chan pkg.ProgressEvent)
 
-		errGroup := errgroup.Group{}
+		errGroup, ctx2 := errgroup.WithContext(ctx)
 		// Set up a signal handler to cancel the context when the user
 		// presses Ctrl+C
 
 		errGroup.Go(func() error {
 			defer cancel()
-			return pkg.UploadLogs(ctx, settings, data, progressCh)
+			return pkg.UploadLogs(ctx2, settings, data, progressCh)
 		})
 		errGroup.Go(func() error {
-			return pkg.CancelOnSignal(ctx, syscall.SIGINT, cancel)
+			return pkg.CancelOnSignal(ctx2, syscall.SIGINT, cancel)
 		})
 		errGroup.Go(func() error {
 			for {
 				select {
-				case progress := <-progressCh:
+				case progress, ok := <-progressCh:
+					if !ok {
+						cancel()
+						return nil
+					}
 					fmt.Printf("%s: %f\n", progress.Step, progress.StepProgress)
 
-				case <-ctx.Done():
-					return nil
+				case <-ctx2.Done():
+					return ctx2.Err()
 				}
 			}
 		})
 
 		err = errGroup.Wait()
-		cobra.CheckErr(err)
+		if err != context.Canceled {
+			cobra.CheckErr(err)
+		}
 	},
 }
 

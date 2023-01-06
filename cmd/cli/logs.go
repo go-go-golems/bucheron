@@ -61,7 +61,7 @@ var downloadCmd = &cobra.Command{
 
 		progressCh := make(chan bucheron.ProgressEvent)
 
-		errGroup := errgroup.Group{}
+		errGroup, ctx2 := errgroup.WithContext(ctx)
 		errGroup.Go(func() error {
 			for {
 				select {
@@ -71,17 +71,17 @@ var downloadCmd = &cobra.Command{
 						return nil
 					}
 					fmt.Printf("%s %f\n", progress.Step, progress.StepProgress)
-				case <-ctx.Done():
-					return ctx.Err()
+				case <-ctx2.Done():
+					return ctx2.Err()
 				}
 			}
 		})
 
 		errGroup.Go(func() error {
-			return bucheron.DownloadLogs(ctx, settings, filterSettings, output, progressCh)
+			return bucheron.DownloadLogs(ctx2, settings, filterSettings, output, progressCh)
 		})
 		errGroup.Go(func() error {
-			return bucheron.CancelOnSignal(ctx, syscall.SIGINT, cancel)
+			return bucheron.CancelOnSignal(ctx2, syscall.SIGINT, cancel)
 		})
 
 		err = errGroup.Wait()
@@ -138,7 +138,7 @@ var listCmd = &cobra.Command{
 
 		gp.OutputFormatter().SetColumnOrder([]string{"fileName", "key", "date", "size", "comment", "metadata"})
 
-		errGroup := errgroup.Group{}
+		errGroup, ctx2 := errgroup.WithContext(ctx)
 		errGroup.Go(func() error {
 			for {
 				select {
@@ -160,17 +160,17 @@ var listCmd = &cobra.Command{
 						row[k] = v
 					}
 					_ = gp.ProcessInputObject(row)
-				case <-ctx.Done():
-					return ctx.Err()
+				case <-ctx2.Done():
+					return ctx2.Err()
 				}
 			}
 		})
 
 		errGroup.Go(func() error {
-			return bucheron.ListLogBucketKeys(ctx, settings, filterSettings, entryCh)
+			return bucheron.ListLogBucketKeys(ctx2, settings, filterSettings, entryCh)
 		})
 		errGroup.Go(func() error {
-			return bucheron.CancelOnSignal(ctx, syscall.SIGINT, cancel)
+			return bucheron.CancelOnSignal(ctx2, syscall.SIGINT, cancel)
 		})
 
 		err = errGroup.Wait()
@@ -193,7 +193,6 @@ func init() {
 
 	flagsDefaults := cli.NewFlagsDefaults()
 	//flagsDefaults.FieldsFilter.SortColumns = true
-	flagsDefaults.FieldsFilter.Fields = "fileName"
 	flagsDefaults.FieldsFilter.Filter = "key,uuid,horseStaple"
 	cli.AddFlags(listCmd, flagsDefaults)
 

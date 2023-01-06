@@ -50,9 +50,9 @@ func DownloadLogs(
 	downloader := s3manager.NewDownloader(sess)
 	entryCh2 := make(chan LogEntry)
 
-	errGroup := errgroup.Group{}
+	errGroup, ctx2 := errgroup.WithContext(ctx)
 	errGroup.Go(func() error {
-		return ListLogBucketKeys(ctx, settings, filter, entryCh2)
+		return ListLogBucketKeys(ctx2, settings, filter, entryCh2)
 	})
 
 	errGroup.Go(func() error {
@@ -88,8 +88,8 @@ func DownloadLogs(
 					return err
 				}
 
-			case <-ctx.Done():
-				return ctx.Err()
+			case <-ctx2.Done():
+				return ctx2.Err()
 			}
 		}
 	})
