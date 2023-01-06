@@ -95,7 +95,18 @@ func init() {
 	_ = usageFunc
 	_ = usageTemplate
 
-	rootCmd.PersistentFlags().StringP("api", "a", "https://npyksyvjqj.execute-api.us-east-1.amazonaws.com/v1/", "URL of the bucheron API")
+	rootCmd.PersistentFlags().StringP(
+		"api", "a",
+		"https://npyksyvjqj.execute-api.us-east-1.amazonaws.com/v1/",
+		"URL of the bucheron API")
+	rootCmd.PersistentFlags().StringP(
+		"bucket", "b",
+		"wesen-ppa-control-logs",
+		"S3 bucket to upload to")
+	rootCmd.PersistentFlags().StringP(
+		"region", "r",
+		"us-east-1",
+		"Region of the S3 bucket")
 
 	rootCmd.SetHelpFunc(helpFunc)
 	rootCmd.SetUsageFunc(usageFunc)

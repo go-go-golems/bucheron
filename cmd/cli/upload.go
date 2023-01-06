@@ -1,49 +1,78 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.com/wesen/bucheron/pkg"
+	"golang.org/x/sync/errgroup"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
-func uploadLog() {
-	// create an AWS session
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String("us-east-1"),
-	})
-	if err != nil {
-		fmt.Println("Error creating session:", err)
-		return
-	}
+var uploadCmd = &cobra.Command{
+	Use:   "upload",
+	Short: "Upload one or more files to S3",
+	Args:  cobra.MinimumNArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		bucket := viper.GetString("bucket")
+		region := viper.GetString("region")
+		comment, _ := cmd.Flags().GetString("comment")
 
-	// create an S3 pkg
-	svc := s3.New(sess)
+		credentials, err := pkg.GetUploadCredentials()
+		cobra.CheckErr(err)
 
-	// open the log file
-	file, err := os.Open("/path/to/logfile.txt")
-	if err != nil {
-		fmt.Println("Error opening file:", err)
-		return
-	}
-	defer file.Close()
+		settings := &pkg.UploadSettings{
+			Region:      region,
+			Bucket:      bucket,
+			Credentials: credentials,
+		}
 
-	// upload the log file to S3
-	_, err = svc.PutObject(&s3.PutObjectInput{
-		Bucket: aws.String("my-bucket"),
-		Key:    aws.String("logfile.txt"),
-		Body:   file,
-		// add the comment as metadata
-		Metadata: map[string]*string{
-			"Comment": aws.String("This is a log file"),
-		},
-	})
-	if err != nil {
-		fmt.Println("Error uploading file:", err)
-		return
-	}
+		data := &pkg.UploadData{
+			Files:    args,
+			Comment:  comment,
+			Metadata: nil,
+		}
 
-	fmt.Println("File uploaded successfully")
+		ctx, cancel := context.WithCancel(context.Background())
 
+		// Set up a signal handler to cancel the context when the user
+		// presses Ctrl+C
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT)
+		go func() {
+			<-sigCh
+			fmt.Println("Received Ctrl+C, canceling context")
+			cancel()
+		}()
+
+		progressCh := make(chan pkg.UploadProgress)
+
+		errGroup := errgroup.Group{}
+		errGroup.Go(func() error {
+			defer cancel()
+			return pkg.UploadLogs(ctx, settings, data, progressCh)
+		})
+		errGroup.Go(func() error {
+			for {
+				select {
+				case progress := <-progressCh:
+					fmt.Printf("%s: %f\n", progress.Step, progress.StepProgress)
+
+				case <-ctx.Done():
+					return nil
+				}
+			}
+		})
+
+		err = errGroup.Wait()
+		cobra.CheckErr(err)
+	},
+}
+
+func init() {
+	uploadCmd.Flags().StringP("comment", "c", "", "Comment to add to the uploaded files")
+	rootCmd.AddCommand(uploadCmd)
 }

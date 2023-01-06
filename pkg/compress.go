@@ -79,6 +79,8 @@ type DecompressedFile struct {
 	Body io.Reader
 }
 
+// Decompress is broken this is all just WIP
+// TODO(manuel, 2023-01-05): fix this, not sure if this is even really that needed
 func Decompress(ctx *context.Context, r io.Reader, out chan (*DecompressedFile)) error {
 	defer close(out)
 
@@ -128,5 +130,4 @@ func Decompress(ctx *context.Context, r io.Reader, out chan (*DecompressedFile))
 	return errGroup.Wait()
 
 	// Iterate through the files in the archive.
-
 }
