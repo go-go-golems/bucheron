@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/pkg/errors"
 	"log"
@@ -14,7 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 )
 
-func handler(ctx context.Context) (string, error) {
+func handler(ctx context.Context) (events.APIGatewayProxyResponse, error) {
 	// log credentials from environment
 	accessKeyId := os.Getenv("TOKEN_ACCESS_KEY_ID")
 	secretAccessKey := os.Getenv("TOKEN_SECRET_ACCESS_KEY")
@@ -48,13 +49,22 @@ func handler(ctx context.Context) (string, error) {
 		log.Fatal(errors.Wrapf(err, "failed to get session token"))
 	}
 
-	// Return the access key, secret key, and session token as a JSON string
-	return fmt.Sprintf(
-		`{"access_key": "%s", "secret_key": "%s", "session_token": "%s"}`,
-		*result.Credentials.AccessKeyId,
-		*result.Credentials.SecretAccessKey,
-		*result.Credentials.SessionToken,
-	), nil
+	//// Return the access key, secret key, and session token as a JSON string
+	//return fmt.Sprintf(
+	//	`{"access_key": "%s", "secret_key": "%s", "session_token": "%s"}`,
+	//	*result.Credentials.AccessKeyId,
+	//	*result.Credentials.SecretAccessKey,
+	//	*result.Credentials.SessionToken,
+	//), nil
+	return events.APIGatewayProxyResponse{
+		StatusCode: 200,
+		Body: fmt.Sprintf(
+			`{"access_key": "%s", "secret_key": "%s", "session_token": "%s"}`,
+			*result.Credentials.AccessKeyId,
+			*result.Credentials.SecretAccessKey,
+			*result.Credentials.SessionToken,
+		),
+	}, nil
 }
 
 func main() {
