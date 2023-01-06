@@ -42,7 +42,7 @@ func handler(ctx context.Context) (events.APIGatewayProxyResponse, error) {
 	log.Printf("Caller identity: %+v", callerIdentity)
 
 	input := &sts.GetSessionTokenInput{
-		DurationSeconds: aws.Int64(3600), // 1 hour
+		DurationSeconds: aws.Int64(300), // 5 minutes
 	}
 
 	result, err := svc.GetSessionToken(input)

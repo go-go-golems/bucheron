@@ -2,3 +2,4 @@
 dist
 *tfstate*
 .env
+out/

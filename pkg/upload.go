@@ -14,11 +14,24 @@ import (
 	"time"
 )
 
-type UploadSettings struct {
+type BucketSettings struct {
 	// The AWS region that the bucket is in.
 	Region      string
 	Bucket      string
 	Credentials *Credentials
+}
+
+func (us *BucketSettings) CreateSession() (*session.Session, error) {
+	sess, err := session.NewSession(&aws.Config{
+		Credentials: credentials.NewStaticCredentials(
+			us.Credentials.AccessKeyID,
+			us.Credentials.SecretAccessKey,
+			us.Credentials.SessionToken),
+		Region: aws.String(us.Region),
+	})
+
+	return sess, err
+
 }
 
 type UploadData struct {
@@ -27,14 +40,56 @@ type UploadData struct {
 	Metadata map[string]interface{}
 }
 
-type UploadProgress struct {
+type ProgressEvent struct {
 	StepProgress float64
 	Step         string
+	IsError      bool
+}
+
+type WriterWithProgress struct {
+	writer     io.WriterAt
+	progressCh chan ProgressEvent
+	totalBytes int64
+	written    int64
+	stepName   string
+}
+
+func (w *WriterWithProgress) WriteAt(p []byte, off int64) (n int, err error) {
+	n, err = w.writer.WriteAt(p, off)
+	if err != nil {
+		w.progressCh <- ProgressEvent{
+			StepProgress: float64(w.written) / float64(w.totalBytes),
+			Step:         w.stepName,
+			IsError:      true,
+		}
+		return
+	}
+	w.written += int64(n)
+	w.progressCh <- ProgressEvent{
+		StepProgress: float64(w.written) / float64(w.totalBytes),
+		Step:         w.stepName,
+	}
+	return
+}
+
+func NewWriterWithProgress(
+	writer io.WriterAt,
+	progressCh chan ProgressEvent,
+	totalBytes int64,
+	stepName string,
+) *WriterWithProgress {
+	return &WriterWithProgress{
+		writer:     writer,
+		progressCh: progressCh,
+		totalBytes: totalBytes,
+		written:    0,
+		stepName:   stepName,
+	}
 }
 
 type ReaderWithProgress struct {
 	reader     io.ReadSeeker
-	progressCh chan UploadProgress
+	progressCh chan ProgressEvent
 	stepName   string
 	totalBytes int64
 	readBytes  int64
@@ -55,7 +110,7 @@ func (r *ReaderWithProgress) Seek(offset int64, whence int) (int64, error) {
 
 func NewReaderWithProgress(
 	reader io.ReadSeeker,
-	progressCh chan UploadProgress,
+	progressCh chan ProgressEvent,
 	totalBytes int64,
 	stepName string,
 ) *ReaderWithProgress {
@@ -71,25 +126,24 @@ func NewReaderWithProgress(
 func (r ReaderWithProgress) Read(p []byte) (n int, err error) {
 	n, err = r.reader.Read(p)
 	if err != nil {
+		r.progressCh <- ProgressEvent{
+			StepProgress: float64(r.readBytes) / float64(r.totalBytes),
+			Step:         r.stepName,
+			IsError:      true,
+		}
 		return
 	}
 	r.readBytes += int64(n)
-	r.progressCh <- UploadProgress{
+	r.progressCh <- ProgressEvent{
 		StepProgress: float64(r.readBytes) / float64(r.totalBytes),
 		Step:         r.stepName,
 	}
 	return
 }
 
-func UploadLogs(ctx context.Context, settings *UploadSettings, data *UploadData, progressCh chan UploadProgress) error {
+func UploadLogs(ctx context.Context, settings *BucketSettings, data *UploadData, progressCh chan ProgressEvent) error {
 	// Set up a new AWS session using the temporary AWS credentials.
-	sess, err := session.NewSession(&aws.Config{
-		Credentials: credentials.NewStaticCredentials(
-			settings.Credentials.AccessKeyID,
-			settings.Credentials.SecretAccessKey,
-			settings.Credentials.SessionToken),
-		Region: aws.String(settings.Region),
-	})
+	sess, err := settings.CreateSession()
 	if err != nil {
 		return err
 	}

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"fmt"
+	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/wesen/bucheron/pkg"
@@ -17,6 +19,12 @@ var rootCmd = &cobra.Command{
 	Use:   "bucheron",
 	Short: "bucheron CLI tool",
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if viper.GetBool("verbose") {
+			fmt.Println("Verbose output enabled")
+			zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		} else {
+			zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		}
 	},
 }
 
@@ -51,7 +59,8 @@ var getCredentialsCommand = &cobra.Command{
 	Use:   "get-credentials",
 	Short: "Get temporary credentials for uploading file",
 	Run: func(cmd *cobra.Command, args []string) {
-		credentials, err := pkg.GetUploadCredentials()
+		ctx := context.Background()
+		credentials, err := pkg.GetUploadCredentials(ctx, viper.GetString("api"))
 		cobra.CheckErr(err)
 
 		gp, of, err := cli.SetupProcessor(cmd)
@@ -108,6 +117,8 @@ func init() {
 		"us-east-1",
 		"Region of the S3 bucket")
 
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Verbose output")
+
 	rootCmd.SetHelpFunc(helpFunc)
 	rootCmd.SetUsageFunc(usageFunc)
 	rootCmd.SetHelpTemplate(helpTemplate)
@@ -116,12 +127,7 @@ func init() {
 	helpCmd := help.NewCobraHelpCommand(helpSystem)
 	rootCmd.SetHelpCommand(helpCmd)
 
-	cli.AddOutputFlags(getCredentialsCommand)
-	cli.AddTemplateFlags(getCredentialsCommand)
-	cli.AddFieldsFilterFlags(getCredentialsCommand, "")
-	cli.AddSelectFlags(getCredentialsCommand)
-	cli.AddRenameFlags(getCredentialsCommand)
-
+	cli.AddFlags(getCredentialsCommand, cli.NewFlagsDefaults())
 	rootCmd.AddCommand(getCredentialsCommand)
 
 	initViper()

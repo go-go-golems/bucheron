@@ -7,8 +7,6 @@ import (
 	"github.com/spf13/viper"
 	"github.com/wesen/bucheron/pkg"
 	"golang.org/x/sync/errgroup"
-	"os"
-	"os/signal"
 	"syscall"
 )
 
@@ -21,10 +19,14 @@ var uploadCmd = &cobra.Command{
 		region := viper.GetString("region")
 		comment, _ := cmd.Flags().GetString("comment")
 
-		credentials, err := pkg.GetUploadCredentials()
+		// get temporary credentials over HTTP
+		api := viper.GetString("api")
+		ctx, cancel := context.WithCancel(context.Background())
+
+		credentials, err := pkg.GetUploadCredentials(ctx, api)
 		cobra.CheckErr(err)
 
-		settings := &pkg.UploadSettings{
+		settings := &pkg.BucketSettings{
 			Region:      region,
 			Bucket:      bucket,
 			Credentials: credentials,
@@ -36,24 +38,18 @@ var uploadCmd = &cobra.Command{
 			Metadata: nil,
 		}
 
-		ctx, cancel := context.WithCancel(context.Background())
-
-		// Set up a signal handler to cancel the context when the user
-		// presses Ctrl+C
-		sigCh := make(chan os.Signal, 1)
-		signal.Notify(sigCh, syscall.SIGINT)
-		go func() {
-			<-sigCh
-			fmt.Println("Received Ctrl+C, canceling context")
-			cancel()
-		}()
-
-		progressCh := make(chan pkg.UploadProgress)
+		progressCh := make(chan pkg.ProgressEvent)
 
 		errGroup := errgroup.Group{}
+		// Set up a signal handler to cancel the context when the user
+		// presses Ctrl+C
+
 		errGroup.Go(func() error {
 			defer cancel()
 			return pkg.UploadLogs(ctx, settings, data, progressCh)
+		})
+		errGroup.Go(func() error {
+			return pkg.CancelOnSignal(ctx, syscall.SIGINT, cancel)
 		})
 		errGroup.Go(func() error {
 			for {

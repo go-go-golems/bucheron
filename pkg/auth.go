@@ -2,8 +2,8 @@ package pkg
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
-	"github.com/spf13/viper"
 	"io"
 	"net/http"
 	"time"
@@ -20,10 +20,7 @@ type Credentials struct {
 	Expiration      time.Time `json:"expiration"`
 }
 
-func GetUploadCredentials() (*Credentials, error) {
-	// get temporary credentials over HTTP
-	api := viper.GetString("api")
-
+func GetUploadCredentials(ctx context.Context, api string) (*Credentials, error) {
 	requestBody, err := json.Marshal(TokenRequest{
 		AppId: "12345",
 	})
@@ -32,7 +29,7 @@ func GetUploadCredentials() (*Credentials, error) {
 	}
 
 	// POST to /token on api to get credentials
-	req, err := http.NewRequest("POST", api+"/token", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequestWithContext(ctx, "POST", api+"/token", bytes.NewBuffer(requestBody))
 	if err != nil {
 		return nil, err
 	}
