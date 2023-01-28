@@ -142,7 +142,7 @@ func ListLogBucketKeys(
 
 		log.Debug().Msgf("Found %d objects", len(resp.Contents))
 
-		// Append the objects to the list
+		// AppendMatch the objects to the list
 		for _, obj := range resp.Contents {
 			fileName := filepath.Base(*obj.Key)
 
