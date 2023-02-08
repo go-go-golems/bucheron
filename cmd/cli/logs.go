@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	bucheron "github.com/wesen/bucheron/pkg"
-	"github.com/wesen/glazed/pkg/cli"
 	"golang.org/x/sync/errgroup"
 	"os"
 	"syscall"

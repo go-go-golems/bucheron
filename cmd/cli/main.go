@@ -4,12 +4,12 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"github.com/go-go-golems/glazed/pkg/cli"
+	"github.com/go-go-golems/glazed/pkg/help"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/wesen/bucheron/pkg"
-	"github.com/wesen/glazed/pkg/cli"
-	"github.com/wesen/glazed/pkg/help"
 	"os"
 	"strings"
 	"time"
@@ -93,7 +93,7 @@ var docFS embed.FS
 func init() {
 	helpSystem := help.NewHelpSystem()
 
-	err := helpSystem.LoadSectionsFromEmbedFS(docFS, ".")
+	err := helpSystem.LoadSectionsFromFS(docFS, ".")
 	if err != nil {
 		panic(err)
 	}
@@ -130,5 +130,6 @@ func init() {
 	cli.AddFlags(getCredentialsCommand, cli.NewFlagsDefaults())
 	rootCmd.AddCommand(getCredentialsCommand)
 
-	initViper()
+	err = initViper()
+	cobra.CheckErr(err)
 }
