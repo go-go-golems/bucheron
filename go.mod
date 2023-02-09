@@ -1,4 +1,4 @@
-module github.com/wesen/bucheron
+module github.com/go-go-golems/bucheron
 
 go 1.19
 

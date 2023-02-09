@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/go-go-golems/bucheron/pkg"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/wesen/bucheron/pkg"
 	"golang.org/x/sync/errgroup"
 	"syscall"
 )

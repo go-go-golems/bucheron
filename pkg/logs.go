@@ -78,7 +78,7 @@ func DownloadLogs(
 				wf := NewWriterWithProgress(f, progressCh, entry.Size, fmt.Sprintf("Downloading %s", entry.Key))
 
 				// TODO(manuel, 2023-01-06) Could be parallelized
-				// https://github.com/wesen/bucheron/issues/1
+				// https://github.com/go-go-golems/bucheron/issues/1
 				log.Debug().Str("key", entry.Key).Str("fileName", fileName).Msg("Downloading")
 				_, err = downloader.DownloadWithContext(ctx, wf, &s3.GetObjectInput{
 					Bucket: aws.String(settings.Bucket),
