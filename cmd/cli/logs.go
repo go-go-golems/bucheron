@@ -5,6 +5,7 @@ import (
 	"fmt"
 	bucheron "github.com/go-go-golems/bucheron/pkg"
 	"github.com/go-go-golems/glazed/pkg/cli"
+	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -134,7 +135,8 @@ var listCmd = &cobra.Command{
 		}
 
 		entryCh := make(chan bucheron.LogEntry)
-		gp, of, err := cli.SetupProcessor(cmd)
+		gp, of, err := cli.CreateGlazedProcessorFromCobra(cmd)
+		cobra.CheckErr(err)
 
 		gp.OutputFormatter().SetColumnOrder([]string{"fileName", "key", "date", "size", "comment", "metadata"})
 
@@ -191,10 +193,14 @@ func init() {
 	listCmd.Flags().StringSlice("glob", []string{"*.log", "*.json"}, "Glob pattern to filter keys")
 	listCmd.Flags().String("prefix", "", "S3 key prefix")
 
-	flagsDefaults := cli.NewFlagsDefaults()
-	//flagsDefaults.FieldsFilter.SortColumns = true
-	flagsDefaults.FieldsFilter.Filter = "key,uuid,horseStaple"
-	cli.AddFlags(listCmd, flagsDefaults)
+	err := cli.AddGlazedProcessorFlagsToCobraCommand(
+		listCmd,
+		cli.WithFieldsFiltersParameterLayerOptions(
+			layers.WithDefaults(
+				map[string]interface{}{
+					"filter": []string{"key", "uuid", "horseStaple"},
+				})))
+	cobra.CheckErr(err)
 
 	rootCmd.AddCommand(listCmd)
 
