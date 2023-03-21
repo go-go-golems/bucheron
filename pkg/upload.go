@@ -54,22 +54,22 @@ type WriterWithProgress struct {
 	stepName   string
 }
 
-func (w *WriterWithProgress) WriteAt(p []byte, off int64) (n int, err error) {
-	n, err = w.writer.WriteAt(p, off)
+func (w *WriterWithProgress) WriteAt(p []byte, off int64) (int, error) {
+	n, err := w.writer.WriteAt(p, off)
 	if err != nil {
 		w.progressCh <- ProgressEvent{
 			StepProgress: float64(w.written) / float64(w.totalBytes),
 			Step:         w.stepName,
 			IsError:      true,
 		}
-		return
+		return n, err
 	}
 	w.written += int64(n)
 	w.progressCh <- ProgressEvent{
 		StepProgress: float64(w.written) / float64(w.totalBytes),
 		Step:         w.stepName,
 	}
-	return
+	return n, nil
 }
 
 func NewWriterWithProgress(
@@ -123,22 +123,22 @@ func NewReaderWithProgress(
 	}
 }
 
-func (r ReaderWithProgress) Read(p []byte) (n int, err error) {
-	n, err = r.reader.Read(p)
+func (r ReaderWithProgress) Read(p []byte) (int, error) {
+	n, err := r.reader.Read(p)
 	if err != nil {
 		r.progressCh <- ProgressEvent{
 			StepProgress: float64(r.readBytes) / float64(r.totalBytes),
 			Step:         r.stepName,
 			IsError:      true,
 		}
-		return
+		return n, err
 	}
 	r.readBytes += int64(n)
 	r.progressCh <- ProgressEvent{
 		StepProgress: float64(r.readBytes) / float64(r.totalBytes),
 		Step:         r.stepName,
 	}
-	return
+	return n, err
 }
 
 func UploadLogs(ctx context.Context, settings *BucketSettings, data *UploadData, progressCh chan ProgressEvent) error {

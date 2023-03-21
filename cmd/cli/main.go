@@ -63,7 +63,7 @@ var getCredentialsCommand = &cobra.Command{
 		credentials, err := pkg.GetUploadCredentials(ctx, viper.GetString("api"))
 		cobra.CheckErr(err)
 
-		gp, of, err := cli.SetupProcessor(cmd)
+		gp, of, err := cli.CreateGlazedProcessorFromCobra(cmd)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze  procersors: %v\n", err)
 			os.Exit(1)
@@ -98,12 +98,7 @@ func init() {
 		panic(err)
 	}
 
-	helpFunc, usageFunc := help.GetCobraHelpUsageFuncs(helpSystem)
-	helpTemplate, usageTemplate := help.GetCobraHelpUsageTemplates(helpSystem)
-
-	_ = usageFunc
-	_ = usageTemplate
-
+	helpSystem.SetupCobraRootCommand(rootCmd)
 	rootCmd.PersistentFlags().StringP(
 		"api", "a",
 		"https://npyksyvjqj.execute-api.us-east-1.amazonaws.com/v1/",
@@ -119,15 +114,12 @@ func init() {
 
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "Verbose output")
 
-	rootCmd.SetHelpFunc(helpFunc)
-	rootCmd.SetUsageFunc(usageFunc)
-	rootCmd.SetHelpTemplate(helpTemplate)
-	rootCmd.SetUsageTemplate(usageTemplate)
-
 	helpCmd := help.NewCobraHelpCommand(helpSystem)
 	rootCmd.SetHelpCommand(helpCmd)
 
-	cli.AddFlags(getCredentialsCommand, cli.NewFlagsDefaults())
+	err = cli.AddGlazedProcessorFlagsToCobraCommand(getCredentialsCommand)
+	cobra.CheckErr(err)
+
 	rootCmd.AddCommand(getCredentialsCommand)
 
 	err = initViper()
