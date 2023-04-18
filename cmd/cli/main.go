@@ -63,7 +63,7 @@ var getCredentialsCommand = &cobra.Command{
 		credentials, err := pkg.GetUploadCredentials(ctx, viper.GetString("api"))
 		cobra.CheckErr(err)
 
-		gp, of, err := cli.CreateGlazedProcessorFromCobra(cmd)
+		gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze  procersors: %v\n", err)
 			os.Exit(1)
@@ -77,7 +77,7 @@ var getCredentialsCommand = &cobra.Command{
 		}
 		_ = gp.ProcessInputObject(row)
 
-		s, err := of.Output()
+		s, err := gp.OutputFormatter().Output()
 		cobra.CheckErr(err)
 		fmt.Print(s)
 	},

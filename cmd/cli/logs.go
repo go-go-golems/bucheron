@@ -135,7 +135,7 @@ var listCmd = &cobra.Command{
 		}
 
 		entryCh := make(chan bucheron.LogEntry)
-		gp, of, err := cli.CreateGlazedProcessorFromCobra(cmd)
+		gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
 		cobra.CheckErr(err)
 
 		gp.OutputFormatter().SetColumnOrder([]string{"fileName", "key", "date", "size", "comment", "metadata"})
@@ -181,7 +181,7 @@ var listCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		s, err := of.Output()
+		s, err := gp.OutputFormatter().Output()
 		cobra.CheckErr(err)
 		fmt.Print(s)
 	},

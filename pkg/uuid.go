@@ -39,7 +39,7 @@ func HorseStapleToUUID(id string) (uuid.UUID, error) {
 	for i, word := range strings.Split(id, "-") {
 		idx, ok := wordIndex[word]
 		if !ok {
-			return ret, errors.New("invalid horse staple")
+			return ret, errors.Errorf("invalid horse staple: %s, invalid word: %s", id, word)
 		}
 		ret[i*2] = byte(idx >> 8)
 		ret[i*2+1] = byte(idx)
