@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"embed"
 	"fmt"
 	"github.com/go-go-golems/bucheron/pkg"
@@ -59,7 +58,7 @@ var getCredentialsCommand = &cobra.Command{
 	Use:   "get-credentials",
 	Short: "Get temporary credentials for uploading file",
 	Run: func(cmd *cobra.Command, args []string) {
-		ctx := context.Background()
+		ctx := cmd.Context()
 		credentials, err := pkg.GetUploadCredentials(ctx, viper.GetString("api"))
 		cobra.CheckErr(err)
 
@@ -75,9 +74,9 @@ var getCredentialsCommand = &cobra.Command{
 			"session_token":     credentials.SessionToken,
 			"expiration":        credentials.Expiration.Format(time.RFC3339),
 		}
-		_ = gp.ProcessInputObject(row)
+		_ = gp.ProcessInputObject(ctx, row)
 
-		s, err := gp.OutputFormatter().Output()
+		s, err := gp.OutputFormatter().Output(ctx)
 		cobra.CheckErr(err)
 		fmt.Print(s)
 	},

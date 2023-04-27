@@ -161,7 +161,7 @@ var listCmd = &cobra.Command{
 					for k, v := range entry.Metadata {
 						row[k] = v
 					}
-					_ = gp.ProcessInputObject(row)
+					_ = gp.ProcessInputObject(ctx, row)
 				case <-ctx2.Done():
 					return ctx2.Err()
 				}
@@ -181,7 +181,7 @@ var listCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		s, err := gp.OutputFormatter().Output()
+		s, err := gp.OutputFormatter().Output(ctx2)
 		cobra.CheckErr(err)
 		fmt.Print(s)
 	},
