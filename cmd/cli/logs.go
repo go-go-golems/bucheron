@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	bucheron "github.com/go-go-golems/bucheron/pkg"
@@ -181,9 +182,10 @@ var listCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		s, err := gp.OutputFormatter().Output(ctx2)
+		buf := bytes.NewBuffer(nil)
+		err = gp.OutputFormatter().Output(ctx2, buf)
 		cobra.CheckErr(err)
-		fmt.Print(s)
+		fmt.Print(buf.String())
 	},
 }
 

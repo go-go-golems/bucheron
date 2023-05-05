@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
 	"github.com/go-go-golems/bucheron/pkg"
@@ -76,9 +77,10 @@ var getCredentialsCommand = &cobra.Command{
 		}
 		_ = gp.ProcessInputObject(ctx, row)
 
-		s, err := gp.OutputFormatter().Output(ctx)
+		buf := &bytes.Buffer{}
+		err = gp.OutputFormatter().Output(ctx, buf)
 		cobra.CheckErr(err)
-		fmt.Print(s)
+		fmt.Print(buf.String())
 	},
 }
 
