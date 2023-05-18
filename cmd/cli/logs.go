@@ -7,6 +7,7 @@ import (
 	bucheron "github.com/go-go-golems/bucheron/pkg"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
+	"github.com/go-go-golems/glazed/pkg/settings"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -104,7 +105,7 @@ var listCmd = &cobra.Command{
 		glob, _ := cmd.Flags().GetStringSlice("glob")
 		prefix, _ := cmd.Flags().GetString("prefix")
 
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(cmd.Context())
 
 		log.Debug().Msg("Getting log keys")
 
@@ -197,7 +198,7 @@ func init() {
 
 	err := cli.AddGlazedProcessorFlagsToCobraCommand(
 		listCmd,
-		cli.WithFieldsFiltersParameterLayerOptions(
+		settings.WithFieldsFiltersParameterLayerOptions(
 			layers.WithDefaults(
 				map[string]interface{}{
 					"filter": []string{"key", "uuid", "horseStaple"},
