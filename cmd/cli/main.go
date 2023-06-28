@@ -7,6 +7,7 @@ import (
 	"github.com/go-go-golems/bucheron/pkg"
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/help"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -69,16 +70,19 @@ var getCredentialsCommand = &cobra.Command{
 			os.Exit(1)
 		}
 
-		row := map[string]interface{}{
-			"access_key_id":     credentials.AccessKeyID,
-			"secret_access_key": credentials.SecretAccessKey,
-			"session_token":     credentials.SessionToken,
-			"expiration":        credentials.Expiration.Format(time.RFC3339),
-		}
-		_ = gp.ProcessInputObject(ctx, row)
+		row := types.NewRow(
+			types.MRP("access_key_id", credentials.AccessKeyID),
+			types.MRP("secret_access_key", credentials.SecretAccessKey),
+			types.MRP("session_token", credentials.SessionToken),
+			types.MRP("expiration", credentials.Expiration.Format(time.RFC3339)),
+		)
+		_ = gp.AddRow(ctx, row)
+
+		err = gp.Finalize(ctx)
+		cobra.CheckErr(err)
 
 		buf := &bytes.Buffer{}
-		err = gp.OutputFormatter().Output(ctx, buf)
+		err = gp.OutputFormatter().Output(ctx, gp.GetTable(), buf)
 		cobra.CheckErr(err)
 		fmt.Print(buf.String())
 	},

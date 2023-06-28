@@ -8,6 +8,7 @@ import (
 	"github.com/go-go-golems/glazed/pkg/cli"
 	"github.com/go-go-golems/glazed/pkg/cmds/layers"
 	"github.com/go-go-golems/glazed/pkg/settings"
+	"github.com/go-go-golems/glazed/pkg/types"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -140,8 +141,6 @@ var listCmd = &cobra.Command{
 		gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
 		cobra.CheckErr(err)
 
-		gp.OutputFormatter().SetColumnOrder([]string{"fileName", "key", "date", "size", "comment", "metadata"})
-
 		errGroup, ctx2 := errgroup.WithContext(ctx)
 		errGroup.Go(func() error {
 			for {
@@ -151,19 +150,21 @@ var listCmd = &cobra.Command{
 						cancel()
 						return nil
 					}
-					row := make(map[string]interface{})
-					row["fileName"] = entry.FileName
-					row["key"] = entry.Key
-					row["comment"] = entry.Comment
-					row["date"] = entry.Date
-					row["size"] = entry.Size
-					row["uuid"] = entry.UUID
-					row["horseStaple"] = bucheron.UUIDToHorseStaple(entry.UUID)
+					row := types.NewRow(
+						types.MRP("fileName", entry.FileName),
+						types.MRP("key", entry.Key),
+						types.MRP("comment", entry.Comment),
+						types.MRP("date", entry.Date),
+
+						types.MRP("size", entry.Size),
+						types.MRP("uuid", entry.UUID),
+						types.MRP("horseStaple", bucheron.UUIDToHorseStaple(entry.UUID)),
+					)
 
 					for k, v := range entry.Metadata {
-						row[k] = v
+						row.Set(k, v)
 					}
-					_ = gp.ProcessInputObject(ctx, row)
+					_ = gp.AddRow(ctx, row)
 				case <-ctx2.Done():
 					return ctx2.Err()
 				}
@@ -183,8 +184,10 @@ var listCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
+		err = gp.Finalize(ctx2)
+		cobra.CheckErr(err)
 		buf := bytes.NewBuffer(nil)
-		err = gp.OutputFormatter().Output(ctx2, buf)
+		err = gp.OutputFormatter().Output(ctx2, gp.GetTable(), buf)
 		cobra.CheckErr(err)
 		fmt.Print(buf.String())
 	},
