@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
 	"github.com/go-go-golems/bucheron/pkg"
@@ -64,7 +63,7 @@ var getCredentialsCommand = &cobra.Command{
 		credentials, err := pkg.GetUploadCredentials(ctx, viper.GetString("api"))
 		cobra.CheckErr(err)
 
-		gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
+		gp, _, err := cli.CreateGlazedProcessorFromCobra(cmd)
 		if err != nil {
 			_, _ = fmt.Fprintf(os.Stderr, "Could not create glaze  procersors: %v\n", err)
 			os.Exit(1)
@@ -78,13 +77,8 @@ var getCredentialsCommand = &cobra.Command{
 		)
 		_ = gp.AddRow(ctx, row)
 
-		err = gp.Finalize(ctx)
+		err = gp.Close(ctx)
 		cobra.CheckErr(err)
-
-		buf := &bytes.Buffer{}
-		err = gp.OutputFormatter().Output(ctx, gp.GetTable(), buf)
-		cobra.CheckErr(err)
-		fmt.Print(buf.String())
 	},
 }
 

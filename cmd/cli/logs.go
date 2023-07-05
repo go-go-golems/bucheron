@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	bucheron "github.com/go-go-golems/bucheron/pkg"
@@ -138,7 +137,7 @@ var listCmd = &cobra.Command{
 		}
 
 		entryCh := make(chan bucheron.LogEntry)
-		gp, err := cli.CreateGlazedProcessorFromCobra(cmd)
+		gp, _, err := cli.CreateGlazedProcessorFromCobra(cmd)
 		cobra.CheckErr(err)
 
 		errGroup, ctx2 := errgroup.WithContext(ctx)
@@ -184,12 +183,8 @@ var listCmd = &cobra.Command{
 			cobra.CheckErr(err)
 		}
 
-		err = gp.Finalize(ctx2)
+		err = gp.Close(ctx2)
 		cobra.CheckErr(err)
-		buf := bytes.NewBuffer(nil)
-		err = gp.OutputFormatter().Output(ctx2, gp.GetTable(), buf)
-		cobra.CheckErr(err)
-		fmt.Print(buf.String())
 	},
 }
 
