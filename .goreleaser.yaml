@@ -30,7 +30,7 @@ brews:
   - name: bucheron
     description: "bucheron is a tool to upload logs"
     homepage: "https://github.com/go-go-golems/bucheron"
-    tap:
+    repository:
       owner: go-go-golems
       name: homebrew-go-go-go
       token: "{{ .Env.TAP_GITHUB_TOKEN }}"
