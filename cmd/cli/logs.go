@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	"os"
-	"syscall"
+	"os/signal"
 	"time"
 )
 
@@ -62,6 +62,9 @@ var downloadCmd = &cobra.Command{
 			filterSettings.To = &toDate
 		}
 
+		ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
+		defer stop()
+
 		progressCh := make(chan bucheron.ProgressEvent)
 
 		errGroup, ctx2 := errgroup.WithContext(ctx)
@@ -82,9 +85,6 @@ var downloadCmd = &cobra.Command{
 
 		errGroup.Go(func() error {
 			return bucheron.DownloadLogs(ctx2, settings, filterSettings, output, progressCh)
-		})
-		errGroup.Go(func() error {
-			return bucheron.CancelOnSignal(ctx2, syscall.SIGINT, cancel)
 		})
 
 		err = errGroup.Wait()
@@ -140,6 +140,8 @@ var listCmd = &cobra.Command{
 		gp, _, err := cli.CreateGlazedProcessorFromCobra(cmd)
 		cobra.CheckErr(err)
 
+		ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
+		defer stop()
 		errGroup, ctx2 := errgroup.WithContext(ctx)
 		errGroup.Go(func() error {
 			for {
@@ -172,9 +174,6 @@ var listCmd = &cobra.Command{
 
 		errGroup.Go(func() error {
 			return bucheron.ListLogBucketKeys(ctx2, settings, filterSettings, entryCh)
-		})
-		errGroup.Go(func() error {
-			return bucheron.CancelOnSignal(ctx2, syscall.SIGINT, cancel)
 		})
 
 		err = errGroup.Wait()

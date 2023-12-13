@@ -7,7 +7,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
-	"syscall"
+	"os"
+	"os/signal"
 )
 
 var uploadCmd = &cobra.Command{
@@ -40,6 +41,9 @@ var uploadCmd = &cobra.Command{
 
 		progressCh := make(chan pkg.ProgressEvent)
 
+		ctx, stop := signal.NotifyContext(ctx, os.Interrupt)
+		defer stop()
+
 		errGroup, ctx2 := errgroup.WithContext(ctx)
 		// Set up a signal handler to cancel the context when the user
 		// presses Ctrl+C
@@ -47,9 +51,6 @@ var uploadCmd = &cobra.Command{
 		errGroup.Go(func() error {
 			defer cancel()
 			return pkg.UploadLogs(ctx2, settings, data, progressCh)
-		})
-		errGroup.Go(func() error {
-			return pkg.CancelOnSignal(ctx2, syscall.SIGINT, cancel)
 		})
 		errGroup.Go(func() error {
 			for {
