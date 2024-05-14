@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
+	"io"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
@@ -21,7 +23,7 @@ func handleUpload(sqsEvent events.SQSEvent) error {
 		Region: aws.String("us-east-1"),
 	})
 	if err != nil {
-		return errors.Errorf("Error creating session: %v", err)
+		return errors.Wrap(err, "Error creating session")
 	}
 
 	// create an S3 pkg
@@ -41,9 +43,11 @@ func handleUpload(sqsEvent events.SQSEvent) error {
 			Key:    aws.String(key),
 		})
 		if err != nil {
-			return errors.Errorf("Error getting object from S3: %v", err)
+			return errors.Wrap(err, "Error getting object from S3")
 		}
-		defer result.Body.Close()
+		defer func(Body io.ReadCloser) {
+			_ = Body.Close()
+		}(result.Body)
 
 		// get the comment from the metadata
 		comment := *result.Metadata["Comment"]
@@ -68,7 +72,7 @@ func handleUpload(sqsEvent events.SQSEvent) error {
 			Source: aws.String("you@example.com"),
 		})
 		if err != nil {
-			return errors.Errorf("Error sending email: %v", err)
+			return errors.Wrap(err, "Error sending email")
 		}
 	}
 
