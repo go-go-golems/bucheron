@@ -21,7 +21,7 @@ func handleUpload(sqsEvent events.SQSEvent) error {
 		Region: aws.String("us-east-1"),
 	})
 	if err != nil {
-		return fmt.Errorf("Error creating session: %v", err)
+		return errors.Errorf("Error creating session: %v", err)
 	}
 
 	// create an S3 pkg
@@ -41,7 +41,7 @@ func handleUpload(sqsEvent events.SQSEvent) error {
 			Key:    aws.String(key),
 		})
 		if err != nil {
-			return fmt.Errorf("Error getting object from S3: %v", err)
+			return errors.Errorf("Error getting object from S3: %v", err)
 		}
 		defer result.Body.Close()
 
@@ -68,7 +68,7 @@ func handleUpload(sqsEvent events.SQSEvent) error {
 			Source: aws.String("you@example.com"),
 		})
 		if err != nil {
-			return fmt.Errorf("Error sending email: %v", err)
+			return errors.Errorf("Error sending email: %v", err)
 		}
 	}
 
